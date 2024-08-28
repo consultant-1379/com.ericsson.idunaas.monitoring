@@ -1,0 +1,10 @@
+{{- if .Values.monitoring.helm_stats -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "idunaas-custom-exporter.fullname" . }}-helmstats
+data:
+  MONITOR_CHART_VERSIONS: "{{ .Values.monitoring.helm_stats}}"
+  EIC_NAMESPACE:         "{{ .Values.eic_namespace}}"
+{{- end }}

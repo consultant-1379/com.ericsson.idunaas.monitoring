@@ -1,0 +1,15 @@
+{{- if .Values.clusterRoleBinding.create -}}
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "idunaas-custom-exporter.clusterRoleBindingName" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "idunaas-custom-exporter.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "idunaas-custom-exporter.clusterRoleName" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

@@ -1,0 +1,10 @@
+{{- if .Values.countApps.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "idunaas-custom-exporter.fullname" . }}-conf-rapps
+data:
+  APPS_ENABLED: "{{ .Values.countApps.enabled }}"
+  APPS_URL:     "{{ .Values.countApps.url }}"
+{{- end }}

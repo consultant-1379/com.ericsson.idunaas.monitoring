@@ -1,0 +1,137 @@
+modelVersion: 2.0
+
+description: "EIAPaaS: Common ruleset for Team Muon EIAPaaS Deployment Manager"
+
+docker-images:
+  - precode-review: armdocker.rnd.ericsson.se/proj-idun-aas/com.ericsson.oss.idunaas.monitoring.precode.review:latest
+  - bump-version: armdocker.rnd.ericsson.se/dockerhub-ericsson-remote/treeder/bump:1.2.11
+
+properties:
+  - monitoring-image-name: idunaas-custom-exporter
+  - precode-review-image-name: com.ericsson.oss.idunaas.monitoring.precode.review
+  - chart-repo: https://arm.seli.gic.ericsson.se/artifactory/proj-eric-eicaas-test-helm/eicaas_monitoring_chart/
+  - helm-chart-artifactory-url: https://arm.seli.gic.ericsson.se/artifactory/proj-eric-eicaas-test-helm/
+
+var:
+  - monitoring-image-id
+  - precode-review-image-id
+  - Helm-chart
+  - Chart-Name
+
+env:
+  - PWD
+  - WORKSPACE
+  - IMAGE_VERSION
+  - GIT_COMMIT
+  - GERRIT_REFSPEC
+  - CHANGED_PYTHON_FILES
+  - CHANGED_DOCKERFILE
+  - CHANGE_TYPE
+  - FUNCTIONAL_USER_USERNAME
+  - FUNCTIONAL_USER_PASSWORD
+
+rules:
+  bump-service-version:
+    - task: bump-version-file
+      docker-image: bump-version
+      docker-flags:
+        - "--workdir /app"
+      docker-mounts:
+        - "${env.PWD}:/app"
+      cmd: --filename ./VERSION ${env.CHANGE_TYPE}
+    - task: expose-version-in-artifactproperties
+      cmd: cat "./VERSION" > ${env.WORKSPACE}/artifact.properties
+
+  push-changes-to-version-file:
+    - task: Git add
+      cmd: git add ./VERSION
+    - task: Git commit
+      cmd: git commit -m "Version ${env.IMAGE_VERSION}"
+    - task: Git tag
+      cmd: git tag -a "${env.IMAGE_VERSION}" -m "version ${env.IMAGE_VERSION}"
+    - task: Ignore other file changed
+      cmd: git checkout .
+    - task: Git rebase
+      cmd: git rebase HEAD gcn/master
+    - task: Git push to master
+      cmd: git push gcn HEAD:master
+    - task: Git push tags
+      cmd: git push --tags gcn
+
+  build-monitoring:
+    - task: Build Monitoring image
+      cmd: docker build --target "released_image" -t armdocker.rnd.ericsson.se/proj-idun-aas/${monitoring-image-name}:${env.IMAGE_VERSION} prometheus/custom_exporter/
+    - task: Get Monitoring image ID
+      cmd: docker images armdocker.rnd.ericsson.se/proj-idun-aas/${monitoring-image-name} -q > .bob/var.monitoring-image-id
+    - task: Tag Monitoring image as latest
+      cmd: docker tag ${var.monitoring-image-id} armdocker.rnd.ericsson.se/proj-idun-aas/${monitoring-image-name}:latest
+
+  Publish-helm-chart:
+    - task: Update new image version
+      cmd: sed -i "s/tag:\"*.*\"/tag:\ \"${env.IMAGE_VERSION}\"/" prometheus/helm-chart/idunaas-custom-exporter/values.yaml
+    - task: Package Helm-chart
+      cmd: helm package ./prometheus/helm-chart/idunaas-custom-exporter --version ${env.IMAGE_VERSION} > .bob/var.Helm-chart
+    - task: Set the chart name
+      cmd: cat .bob/var.Helm-chart | awk -F "/" '{print$NF}' > .bob/var.Chart-Name
+    - task: Add helm repo
+      cmd: helm repo add custom-exporter ${helm-chart-artifactory-url}
+    - task: Push the helm chart
+      cmd: curl -u ${env.FUNCTIONAL_USER_USERNAME}:${env.FUNCTIONAL_USER_PASSWORD} -T ${var.Chart-Name} "${chart-repo}"
+
+  publish-monitoring:
+    - task: Publish Monitoring with specific version
+      cmd: docker push armdocker.rnd.ericsson.se/proj-idun-aas/${monitoring-image-name}:${env.IMAGE_VERSION}
+    - task: Publish Monitoring with latest version
+      cmd: docker push armdocker.rnd.ericsson.se/proj-idun-aas/${monitoring-image-name}:latest
+
+  build-precode-image-custom-exporter:
+    - task: Build Precode Review image
+      cmd: docker build --target "precode_review" -t armdocker.rnd.ericsson.se/proj-idun-aas/com.ericsson.oss.idunaas.monitoring.precode.review prometheus/custom_exporter/
+    - task: Push precode review image to repo
+      cmd: docker push armdocker.rnd.ericsson.se/proj-idun-aas/com.ericsson.oss.idunaas.monitoring.precode.review:latest
+    - task: Get Precode Review image ID
+      cmd: docker images armdocker.rnd.ericsson.se/proj-idun-aas/com.ericsson.oss.idunaas.monitoring.precode.review -q > .bob/var.precode-review-image-id
+
+  run-python-tests-custom-exporter:
+    - task: Run Pytest
+      docker-image: precode-review
+      docker-flags:
+        - "--network host"
+        - "--workdir /workdir"
+      docker-mounts:
+        - "${env.PWD}:/workdir"
+      cmd: coverage run --source prometheus/custom_exporter -m pytest -v --ignore=bob
+    - task: Generate Pytest coverage report
+      docker-image: precode-review
+      docker-flags:
+        - "--workdir /workdir"
+      docker-mounts:
+        - "${env.PWD}:/workdir"
+      cmd: coverage report
+
+
+  remove-precode-image:
+    - task: Remove Precode Review image
+      cmd: docker rmi -f ${var.precode-review-image-id}
+
+  monitoring-linting:
+    - task: Run Pylint
+      docker-image: precode-review
+      cmd: pylint --exit-zero prometheus/custom_exporter/*
+    - task: Run flake8
+      docker-image: precode-review
+      cmd: flake8 --exit-zero --exclude bob .
+
+  lint-changed-files:
+    - task: Lint changed files
+      docker-image: precode-review
+      cmd: pylint --persistent=no ${env.CHANGED_PYTHON_FILES}
+
+  git-clean:
+    - task: Git clean
+      cmd: docker run --rm -v ${env.PWD}:/git/ armdocker.rnd.ericsson.se/dockerhub-ericsson-remote/alpine/git:v2.32.0 clean -xdff
+
+  delete-images-excluding-grafana:
+    - task: Clean up Docker images
+      cmd: bash -c 'scripts/clean_up_images_on_slave.sh'
+

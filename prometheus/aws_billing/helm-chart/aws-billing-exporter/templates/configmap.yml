@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "aws-billing-exporter.fullname" . }}-configmap
+data:
+  DEPLOYMENT_TYPE: "{{ .Values.monitoring.deployment_type}}"
+  POLLING_INTERVAL_SECONDS:         "{{ .Values.monitoring.polling_interval_seconds}}"
+  BUCKET_NAME:     "{{ .Values.monitoring.bucket_name}}"

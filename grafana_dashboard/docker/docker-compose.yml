@@ -1,0 +1,20 @@
+version: '3'
+services:
+  grafana:
+    image: armdocker.rnd.ericsson.se/dockerhub-ericsson-remote/grafana/grafana:8.1.3
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_LOG_MODE=console file
+      - GF_LOG_LEVEL=debug
+    volumes:
+        - ./grafana_data:/var/lib/grafana
+        - ./grafana_config:/etc/grafana
+    ports:
+      - 3000:3000
+    extra_hosts:
+      - "aws-client.seli.ericsson.se:150.132.8.132"
+    restart: always
+    labels:
+      org.label-schema.group: "oss-monitoring"

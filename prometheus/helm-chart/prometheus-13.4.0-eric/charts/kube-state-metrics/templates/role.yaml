@@ -1,0 +1,192 @@
+{{- if and (eq $.Values.rbac.create true) (not .Values.rbac.useExistingRole)  -}}
+{{- if eq .Values.rbac.useClusterRole false }}
+{{-   range (split "," $.Values.namespace) }}
+{{- end }}
+{{- end -}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+{{- if eq .Values.rbac.useClusterRole false }}
+kind: Role
+{{- else }}
+kind: ClusterRole
+{{- end }}
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ template "kube-state-metrics.name" $ }}
+    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+  name: {{ template "kube-state-metrics.fullname" $ }}
+{{- if eq .Values.rbac.useClusterRole false }}
+  namespace: {{ . }}
+{{- end }}
+rules:
+{{ if or $.Values.collectors.certificatesigningrequests $.Values.addAllRulesToRole }}
+- apiGroups: ["certificates.k8s.io"]
+  resources:
+  - certificatesigningrequests
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.configmaps $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.cronjobs $.Values.addAllRulesToRole }}
+- apiGroups: ["batch"]
+  resources:
+  - cronjobs
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.daemonsets $.Values.addAllRulesToRole }}
+- apiGroups: ["extensions", "apps"]
+  resources:
+  - daemonsets
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.deployments $.Values.addAllRulesToRole }}
+- apiGroups: ["extensions", "apps"]
+  resources:
+  - deployments
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.endpoints $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - endpoints
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.horizontalpodautoscalers $.Values.addAllRulesToRole }}
+- apiGroups: ["autoscaling"]
+  resources:
+  - horizontalpodautoscalers
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.ingresses $.Values.addAllRulesToRole }}
+- apiGroups: ["extensions", "networking.k8s.io"]
+  resources:
+  - ingresses
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.jobs $.Values.addAllRulesToRole }}
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.limitranges $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - limitranges
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.mutatingwebhookconfigurations $.Values.addAllRulesToRole }}
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources:
+    - mutatingwebhookconfigurations
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.namespaces $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.networkpolicies $.Values.addAllRulesToRole }}
+- apiGroups: ["networking.k8s.io"]
+  resources:
+  - networkpolicies
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.nodes $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - nodes
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.persistentvolumeclaims $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - persistentvolumeclaims
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.persistentvolumes $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - persistentvolumes
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.poddisruptionbudgets $.Values.addAllRulesToRole }}
+- apiGroups: ["policy"]
+  resources:
+    - poddisruptionbudgets
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.pods $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.replicasets $.Values.addAllRulesToRole }}
+- apiGroups: ["extensions", "apps"]
+  resources:
+  - replicasets
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.replicationcontrollers $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - replicationcontrollers
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.resourcequotas $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - resourcequotas
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.secrets $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.services $.Values.addAllRulesToRole }}
+- apiGroups: [""]
+  resources:
+  - services
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.statefulsets $.Values.addAllRulesToRole }}
+- apiGroups: ["apps"]
+  resources:
+  - statefulsets
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.storageclasses $.Values.addAllRulesToRole }}
+- apiGroups: ["storage.k8s.io"]
+  resources:
+    - storageclasses
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.validatingwebhookconfigurations $.Values.addAllRulesToRole }}
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources:
+    - validatingwebhookconfigurations
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.volumeattachments $.Values.addAllRulesToRole }}
+- apiGroups: ["storage.k8s.io"]
+  resources:
+    - volumeattachments
+  verbs: ["list", "watch"]
+{{ end -}}
+{{ if or $.Values.collectors.verticalpodautoscalers $.Values.addAllRulesToRole }}
+- apiGroups: ["autoscaling.k8s.io"]
+  resources:
+    - verticalpodautoscalers
+  verbs: ["list", "watch"]
+{{ end -}}
+{{- end -}}

@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  idunaas-custom-exporter:
+    image: armdocker.rnd.ericsson.se/proj-idun-aas/com.ericsson.oss.idunaas.customexporter:0.5.0
+    ports:
+      - "8008:8008"
+    volumes:
+      - /path/to/my/config.ini:/config/config.ini

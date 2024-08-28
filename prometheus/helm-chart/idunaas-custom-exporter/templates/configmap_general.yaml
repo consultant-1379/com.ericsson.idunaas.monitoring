@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "idunaas-custom-exporter.fullname" . }}-general
+data:
+  LOGGING_CONSOLE_LOG_LEVEL:    "{{ .Values.logging.log_to_console.log_level }}"
+  LOGGING_FILE_ENABLED:         "{{ .Values.logging.log_to_file.enabled }}"
+  LOGGING_FILE_LOG_LEVEL:       "{{ .Values.logging.log_to_file.log_level }}"
+  LOGGING_FILENAME:             "{{ .Values.logging.log_to_file.filename }}"
+  LOGGING_ROTATION_FILESIZE:    "{{ .Values.logging.log_to_file.rotation.filesize }}"
+  LOGGING_ROTATION_RETENTION:   "{{ .Values.logging.log_to_file.rotation.retention }}"
